@@ -129,26 +129,6 @@
             height: 20px;
             background-color: rgba(255, 255, 255, 0.5);
         }
-        /* Add touch control buttons for mobile */
-        #touch-controls {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: none;
-            z-index: 500;
-        }
-        .control-btn {
-            width: 60px;
-            height: 60px;
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            margin: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            user-select: none;
-        }
     </style>
 </head>
 <body>
@@ -162,12 +142,6 @@
         <div id="ai-paddle"></div>
         <div id="ball"></div>
         <div class="net" id="net"></div>
-        
-        <!-- Touch controls for mobile -->
-        <div id="touch-controls">
-            <div class="control-btn" id="up-btn">↑</div>
-            <div class="control-btn" id="down-btn">↓</div>
-        </div>
         
         <div id="start-screen">
             <h1>PONG</h1>
@@ -243,10 +217,7 @@
             platformInfo.textContent = isMobile ? "Mobile Device" : "Desktop";
             
             // Set up appropriate controls based on device
-            if (isMobile) {
-                setupMobileControls();
-                controlInstructions.textContent = "Tap and drag on screen to move paddle";
-            } else {
+            else {
                 document.addEventListener('keydown', handleKeyPress);
                 controlInstructions.textContent = "Use UP and DOWN arrow keys";
                 // Add mouse control for desktop as well
@@ -264,44 +235,6 @@
             resizeGame();
             window.addEventListener('resize', resizeGame);
         };
-        
-        function setupMobileControls() {
-            // Show on-screen buttons for mobile
-            touchControls.style.display = 'block';
-            
-            // Add touch event listeners to the game container
-            gameContainer.addEventListener('touchstart', handleTouchMove, { passive: false });
-            gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-            
-            // Add touch controls for the buttons
-            let upInterval, downInterval;
-            
-            upBtn.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                clearInterval(downInterval);
-                upInterval = setInterval(function() {
-                    paddleY = Math.max(0, paddleY - paddleSpeed);
-                    paddle.style.top = `${paddleY}px`;
-                }, 16);
-            });
-            
-            upBtn.addEventListener('touchend', function() {
-                clearInterval(upInterval);
-            });
-            
-            downBtn.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                clearInterval(upInterval);
-                downInterval = setInterval(function() {
-                    paddleY = Math.min(window.innerHeight - parseInt(paddle.style.height), paddleY + paddleSpeed);
-                    paddle.style.top = `${paddleY}px`;
-                }, 16);
-            });
-            
-            downBtn.addEventListener('touchend', function() {
-                clearInterval(downInterval);
-            });
-        }
         
         function createNet() {
             const net = document.getElementById('net');
