@@ -218,7 +218,8 @@
             
             // Set up appropriate controls based on device
             if (isMobile) {
-                setupMobileControls();
+                gameContainer.addEventListener('touchstart', handleTouchMove, { passive: false });
+                gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
                 controlInstructions.textContent = "Tap and drag on screen to move paddle";
             } else {
                 document.addEventListener('keydown', handleKeyPress);
