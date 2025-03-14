@@ -217,7 +217,10 @@
             platformInfo.textContent = isMobile ? "Mobile Device" : "Desktop";
             
             // Set up appropriate controls based on device
-            else {
+            if (isMobile) {
+                setupMobileControls();
+                controlInstructions.textContent = "Tap and drag on screen to move paddle";
+            } else {
                 document.addEventListener('keydown', handleKeyPress);
                 controlInstructions.textContent = "Use UP and DOWN arrow keys";
                 // Add mouse control for desktop as well
