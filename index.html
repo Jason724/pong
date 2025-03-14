@@ -129,6 +129,26 @@
             height: 20px;
             background-color: rgba(255, 255, 255, 0.5);
         }
+        /* Add touch control buttons for mobile */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: none;
+            z-index: 500;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            margin: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -143,12 +163,17 @@
         <div id="ball"></div>
         <div class="net" id="net"></div>
         
+        <!-- Touch controls for mobile -->
+        <div id="touch-controls">
+            <div class="control-btn" id="up-btn">↑</div>
+            <div class="control-btn" id="down-btn">↓</div>
+        </div>
+        
         <div id="start-screen">
             <h1>PONG</h1>
             <button id="start-button">Start Game</button>
             <div id="instructions">
-                <p>Desktop: Use UP and DOWN arrow keys</p>
-                <p>Mobile: Drag finger up/down</p>
+                <p id="control-instructions">Use mouse or touch to control paddle</p>
                 <p>First to 5 points wins!</p>
                 <p>Game gets harder each time you win</p>
             </div>
@@ -167,7 +192,8 @@
         let paddle, aiPaddle, ball, gameContainer;
         let playerScoreElement, aiScoreElement, levelDisplay;
         let startScreen, gameOverScreen, gameResultElement, difficultyMessage;
-        let platformInfo;
+        let platformInfo, controlInstructions;
+        let touchControls, upBtn, downBtn;
         
         // Game state
         let gameRunning = false;
@@ -187,7 +213,7 @@
         let playerWins = 0;
         
         // Device detection
-        let isIOS = false;
+        let isMobile = false;
         
         // Initialize the game
         window.onload = function() {
@@ -206,10 +232,26 @@
             difficultyMessage = document.getElementById('difficulty-message');
             
             platformInfo = document.getElementById('platform-type');
+            controlInstructions = document.getElementById('control-instructions');
             
-            // Check if device is iOS
-            isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            platformInfo.textContent = isIOS ? "iOS Device (Use Volume Buttons)" : "Desktop/Other (Use Arrow Keys)";
+            touchControls = document.getElementById('touch-controls');
+            upBtn = document.getElementById('up-btn');
+            downBtn = document.getElementById('down-btn');
+            
+            // Check if device is mobile
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            platformInfo.textContent = isMobile ? "Mobile Device" : "Desktop";
+            
+            // Set up appropriate controls based on device
+            if (isMobile) {
+                setupMobileControls();
+                controlInstructions.textContent = "Tap and drag on screen to move paddle";
+            } else {
+                document.addEventListener('keydown', handleKeyPress);
+                controlInstructions.textContent = "Use UP and DOWN arrow keys";
+                // Add mouse control for desktop as well
+                gameContainer.addEventListener('mousemove', handleMouseMove);
+            }
             
             // Create net
             createNet();
@@ -218,16 +260,48 @@
             document.getElementById('start-button').addEventListener('click', startGame);
             document.getElementById('restart-button').addEventListener('click', startGame);
             
-            if (isIOS) {
-                setupVolumeButtonListeners();
-            } else {
-                document.addEventListener('keydown', handleKeyPress);
-            }
-            
             // Set initial dimensions
             resizeGame();
             window.addEventListener('resize', resizeGame);
         };
+        
+        function setupMobileControls() {
+            // Show on-screen buttons for mobile
+            touchControls.style.display = 'block';
+            
+            // Add touch event listeners to the game container
+            gameContainer.addEventListener('touchstart', handleTouchMove, { passive: false });
+            gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            
+            // Add touch controls for the buttons
+            let upInterval, downInterval;
+            
+            upBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                clearInterval(downInterval);
+                upInterval = setInterval(function() {
+                    paddleY = Math.max(0, paddleY - paddleSpeed);
+                    paddle.style.top = `${paddleY}px`;
+                }, 16);
+            });
+            
+            upBtn.addEventListener('touchend', function() {
+                clearInterval(upInterval);
+            });
+            
+            downBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                clearInterval(upInterval);
+                downInterval = setInterval(function() {
+                    paddleY = Math.min(window.innerHeight - parseInt(paddle.style.height), paddleY + paddleSpeed);
+                    paddle.style.top = `${paddleY}px`;
+                }, 16);
+            });
+            
+            downBtn.addEventListener('touchend', function() {
+                clearInterval(downInterval);
+            });
+        }
         
         function createNet() {
             const net = document.getElementById('net');
@@ -427,36 +501,15 @@
             }
         }
         
-        function setupVolumeButtonListeners() {
-            // For iOS devices, attempt to detect volume button presses
-            window.addEventListener('volumechange', function(e) {
-                if (!gameRunning) return;
-                
-                // Toggle direction on each volume press
-                const currentTime = new Date().getTime();
-                
-                if (!this.lastVolumeChange || currentTime - this.lastVolumeChange > 300) {
-                    this.volumeDirection = !this.volumeDirection;
-                    
-                    if (this.volumeDirection) {
-                        // Volume up - move paddle up
-                        paddleY = Math.max(0, paddleY - paddleSpeed * 3);
-                    } else {
-                        // Volume down - move paddle down
-                        paddleY = Math.min(window.innerHeight - parseInt(paddle.style.height), paddleY + paddleSpeed * 3);
-                    }
-                    
-                    paddle.style.top = `${paddleY}px`;
-                    this.lastVolumeChange = currentTime;
-                }
-            });
+        function handleMouseMove(e) {
+            if (!gameRunning) return;
             
-            // Add touch controls as fallback for iOS
-            gameContainer.addEventListener('touchstart', handleTouchMove);
-            gameContainer.addEventListener('touchmove', handleTouchMove);
+            const mouseY = e.clientY;
+            const paddleHeight = parseInt(paddle.style.height);
             
-            // Alert user about iOS controls
-            alert("On iOS, use the volume buttons to control the paddle. You can also use touch as a fallback. Note: Volume button control may have limited responsiveness due to iOS restrictions.");
+            // Set paddle position based on mouse, keeping the paddle centered on the cursor
+            paddleY = Math.max(0, Math.min(window.innerHeight - paddleHeight, mouseY - paddleHeight / 2));
+            paddle.style.top = `${paddleY}px`;
         }
         
         function handleTouchMove(e) {
